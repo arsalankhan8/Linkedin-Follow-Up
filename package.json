@@ -1,0 +1,13 @@
+{
+  "name": "linkedin-followup",
+  "version": "1.0.0",
+  "description": "LinkedIn follow-up automation app",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}
