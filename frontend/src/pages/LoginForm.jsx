@@ -38,7 +38,8 @@ export default function Login() {
       </div>
 
       {/* Google login */}
-      <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+<GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+
         <div className="flex justify-center">
           <GoogleLogin
             onSuccess={handleGoogleLogin}

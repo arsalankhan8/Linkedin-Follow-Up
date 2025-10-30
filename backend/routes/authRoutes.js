@@ -31,11 +31,11 @@ function generateNumericOTP() {
 
 router.post("/google-login", async (req, res) => {
   try {
-    const { tokenId } = req.body;
-    const ticket = await client.verifyIdToken({
-      idToken: tokenId,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
+  const { tokenId } = req.body;
+  const ticket = await client.verifyIdToken({
+    idToken: tokenId,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
     const { email, name, sub: googleId } = ticket.getPayload();
 
     let user = await User.findOne({ email });
