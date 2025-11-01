@@ -9,5 +9,8 @@
   },
   "keywords": [],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@radix-ui/react-avatar": "^1.1.10"
+  }
 }

@@ -10,5 +10,6 @@ export default function Navbar() {
         <Link to="/register" className="hover:underline">Register</Link>
       </div>
     </nav>
+
   );
 }

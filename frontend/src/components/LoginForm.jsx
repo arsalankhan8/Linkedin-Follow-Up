@@ -1,19 +1,25 @@
 import { useState } from "react";
 import { loginUser } from "../api/auth";
+import { useNavigate } from "react-router-dom";
+import { useUserStore } from "@/store/useUserStore";
 
 export default function LoginForm() {
+  const setUser = useUserStore((s) => s.setUser);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const { data } = await loginUser({ email, password });
-      setMessage(`Welcome, ${data.user.email}`);
+
       // store tokens in localStorage or context
       localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
+      setUser(data.user);
+      setMessage(`Welcome, ${data.user.email}`);
+      navigate("/dashboard");
     } catch (err) {
       setMessage(err.response?.data?.message || "Login failed");
     }

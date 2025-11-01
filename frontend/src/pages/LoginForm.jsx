@@ -4,18 +4,23 @@ import LoginForm from "../components/LoginForm";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { googleLogin } from "../api/auth";
 import { Link } from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
+import { useUserStore } from "@/store/useUserStore";
 export default function Login() {
   const [message, setMessage] = useState("");
-
+  const navigate = useNavigate();
+  const setUser = useUserStore((s) => s.setUser);
   const handleGoogleLogin = async (credentialResponse) => {
+    
     try {
       const { data } = await googleLogin({
         tokenId: credentialResponse.credential,
       });
       localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
+      
+      setUser(data.user); 
       setMessage(`Welcome, ${data.user.email}`);
+         navigate("/dashboard");  
     } catch (err) {
       setMessage(err.response?.data?.message || "Google login failed");
     }

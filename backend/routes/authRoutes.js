@@ -13,6 +13,7 @@ import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { sendEmail } from "../utils/sendEmail.js";
+import requireAuth from "../middleware/requireAuth.js";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const router = express.Router();
@@ -26,21 +27,32 @@ function generateNumericOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-
 // Google login route
 
 router.post("/google-login", async (req, res) => {
   try {
-  const { tokenId } = req.body;
-  const ticket = await client.verifyIdToken({
-    idToken: tokenId,
-    audience: process.env.GOOGLE_CLIENT_ID,
-  });
-    const { email, name, sub: googleId } = ticket.getPayload();
+    const { tokenId } = req.body;
+    const ticket = await client.verifyIdToken({
+      idToken: tokenId,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const { email, name, picture, sub: googleId } = ticket.getPayload();
 
     let user = await User.findOne({ email });
     if (!user) {
-      user = new User({ name, email, googleId, isVerified: true });
+      user = new User({
+        name,
+        email,
+        googleId,
+        avatar: picture,
+        isVerified: true,
+      });
+      await user.save();
+    }
+
+    // If user exists but no avatar yet (first time or old account) → add Google avatar
+    if (!user.avatar && picture) {
+      user.avatar = picture;
       await user.save();
     }
 
@@ -51,10 +63,22 @@ router.post("/google-login", async (req, res) => {
 
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
-    res.json({
-      user: { id: user._id, email: user.email },
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    res.status(200).json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+      },
       accessToken,
-      refreshToken,
     });
   } catch (err) {
     console.error("Google login error:", err);
@@ -171,7 +195,15 @@ router.post("/verify-otp", otpLimiter, async (req, res) => {
       return res.status(400).json({ message: "OTP expired." });
 
     const { name, password } = record.userData;
-    const user = new User({ name, email, password, isVerified: true });
+    // Generate default avatar for manual signup users
+    const defaultAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${name}`;
+    const user = new User({
+      name,
+      email,
+      password,
+      avatar: defaultAvatar, // Add avatar here
+      isVerified: true,
+    });
     await user.save();
 
     otpStore.delete(email);
@@ -206,10 +238,22 @@ router.post("/login", loginLimiter, async (req, res) => {
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
 
+    // store refresh in cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
     res.status(200).json({
-      user: { id: user._id, email: user.email },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+      },
       accessToken,
-      refreshToken,
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -217,24 +261,22 @@ router.post("/login", loginLimiter, async (req, res) => {
   }
 });
 
-
 // refresh token route
 
 router.post("/refresh", async (req, res) => {
   try {
-    const { token } = req.body;
+    const token = req.cookies.refreshToken;
     if (!token)
-      return res.status(401).json({ message: "Refresh token required." });
+      return res.status(401).json({ message: "Refresh token missing." });
 
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    const accessToken = generateAccessToken(decoded.userId);
+    const newAccessToken = generateAccessToken(decoded.userId);
 
-    res.status(200).json({ accessToken });
+    res.status(200).json({ accessToken: newAccessToken });
   } catch (err) {
     res.status(401).json({ message: "Invalid or expired refresh token." });
   }
 });
-
 
 // forgot password route
 
@@ -251,7 +293,10 @@ router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
 
     // 2️⃣ Generate secure reset token
     const resetToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
 
     // Store hash & expiry on user (not the raw token)
     user.resetPasswordToken = hashedToken;
@@ -292,7 +337,9 @@ router.post("/reset-password", async (req, res) => {
   try {
     const { token, password } = req.body;
     if (!token || !password)
-      return res.status(400).json({ message: "Token and password are required." });
+      return res
+        .status(400)
+        .json({ message: "Token and password are required." });
 
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
@@ -302,7 +349,9 @@ router.post("/reset-password", async (req, res) => {
     });
 
     if (!user)
-      return res.status(400).json({ message: "Invalid or expired reset token." });
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token." });
 
     user.password = password;
     user.resetPasswordToken = undefined;
@@ -316,6 +365,26 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
+// --- /me route ---
 
+router.get("/me", requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select(
+      "_id name email avatar"
+    );
+    if (!user) return res.status(404).json({ message: "User not found." });
+    res.status(200).json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+      },
+    });
+  } catch (err) {
+    console.error("/me error:", err);
+    res.status(500).json({ message: "Server error." });
+  }
+});
 
 export default router;
