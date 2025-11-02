@@ -11,6 +11,9 @@ import DashboardLayout from "./components/layout/DashboardLayout.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { useUserStore } from "@/store/useUserStore";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import ContactsPage from "./pages/ContactsPage.jsx";
 export default function App() {
   const fetchUser = useUserStore((s) => s.fetchUser);
 
@@ -30,11 +33,41 @@ export default function App() {
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
         {/* Protected + Layout */}
-        <Route element={<ProtectedRoute />}>
+        {/* <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
           </Route>
+        </Route> */}
+
+        <Route element={<ProtectedRoute />}>
+          {/* Dashboard */}
+          <Route
+            path="/dashboard"
+            element={
+              <DashboardLayout title="Dashboard">
+                <Dashboard />
+              </DashboardLayout>
+            }
+          />
+
+          {/* Contacts */}
+          <Route
+            path="/contacts"
+            element={
+              <DashboardLayout
+                title="Contacts Dashboard"
+                action={
+                  <Button size="sm">
+                    <Plus className="w-4 h-4 mr-1" /> Add Contact
+                  </Button>
+                }
+              >
+                <ContactsPage />
+              </DashboardLayout>
+            }
+          />
         </Route>
+
       </Routes>
     </Router>
   );

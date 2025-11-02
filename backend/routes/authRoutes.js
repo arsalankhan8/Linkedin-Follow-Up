@@ -48,17 +48,37 @@ router.post("/google-login", async (req, res) => {
         isVerified: true,
       });
       await user.save();
-    }
-
-    // If user exists but no avatar yet (first time or old account) → add Google avatar
-    if (!user.avatar && picture) {
-      user.avatar = picture;
-      await user.save();
-    }
-
-    if (!user.isVerified) {
-      user.isVerified = true;
-      await user.save();
+    } else {
+      // Update existing user with latest Google profile data
+      let shouldSave = false;
+      
+      // Always update avatar if picture is provided (for account switching)
+      if (picture && user.avatar !== picture) {
+        user.avatar = picture;
+        shouldSave = true;
+      }
+      
+      // Update name if different
+      if (name && user.name !== name) {
+        user.name = name;
+        shouldSave = true;
+      }
+      
+      // Update googleId if different
+      if (googleId && user.googleId !== googleId) {
+        user.googleId = googleId;
+        shouldSave = true;
+      }
+      
+      // Ensure user is verified
+      if (!user.isVerified) {
+        user.isVerified = true;
+        shouldSave = true;
+      }
+      
+      if (shouldSave) {
+        await user.save();
+      }
     }
 
     const accessToken = generateAccessToken(user._id);
@@ -364,6 +384,22 @@ router.post("/reset-password", async (req, res) => {
     res.status(500).json({ message: "Server error." });
   }
 });
+
+router.post("/logout", async (req, res) => {
+  try {
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+    });
+
+    res.status(200).json({ message: "Logged out successfully." });
+  } catch (err) {
+    console.error("Logout error:", err);
+    res.status(500).json({ message: "Server error." });
+  }
+});
+
 
 // --- /me route ---
 

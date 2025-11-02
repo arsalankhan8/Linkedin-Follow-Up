@@ -18,9 +18,10 @@ export default function Login() {
       });
       localStorage.setItem("accessToken", data.accessToken);
       
+      // Set user with fresh data from backend (includes updated avatar)
       setUser(data.user); 
       setMessage(`Welcome, ${data.user.email}`);
-         navigate("/dashboard");  
+      navigate("/dashboard");  
     } catch (err) {
       setMessage(err.response?.data?.message || "Google login failed");
     }

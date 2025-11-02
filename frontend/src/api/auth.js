@@ -8,3 +8,4 @@ export const sendOtp = (data) => api.post("/api/auth/resend-otp", data);
 export const verifyOtp = (data) => api.post("/api/auth/verify-otp", data);
 export const forgotPassword = (data) => api.post("/api/auth/forgot-password", data);
 export const resetPassword = (data) => api.post("/api/auth/reset-password", data);
+export const logoutUser = () => api.post("/api/auth/logout");
