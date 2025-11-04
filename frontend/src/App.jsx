@@ -14,6 +14,8 @@ import { useUserStore } from "@/store/useUserStore";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import ContactsPage from "./pages/ContactsPage.jsx";
+import { Toaster } from "sonner";
+
 export default function App() {
   const fetchUser = useUserStore((s) => s.fetchUser);
 
@@ -44,7 +46,13 @@ export default function App() {
           <Route
             path="/dashboard"
             element={
-              <DashboardLayout title="Dashboard">
+              <DashboardLayout
+                title="Dashboard"
+                onContactAdded={() => {
+                  // trigger refresh in Dashboard via custom event
+                  window.dispatchEvent(new Event("contactAdded"));
+                }}
+              >
                 <Dashboard />
               </DashboardLayout>
             }
@@ -68,7 +76,13 @@ export default function App() {
           />
         </Route>
 
+
       </Routes>
+      <Toaster
+        position="bottom-right"
+        richColors
+        closeButton
+      />
     </Router>
   );
 }

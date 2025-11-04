@@ -1,3 +1,5 @@
+// backend > routes > authRoutes.js
+
 import express from "express";
 import User from "../models/User.js";
 import {
@@ -399,7 +401,6 @@ router.post("/logout", async (req, res) => {
     res.status(500).json({ message: "Server error." });
   }
 });
-
 
 // --- /me route ---
 

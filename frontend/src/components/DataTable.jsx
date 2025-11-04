@@ -42,6 +42,7 @@ function tryParseDate(value) {
 /**
  * formatDateNice - returns 'Mon DD, YYYY' for display when possible
  */
+
 function formatDateNice(value) {
   const d = tryParseDate(value);
   if (!d) return value ?? "";
@@ -56,6 +57,7 @@ function formatDateNice(value) {
  * computeFollowupState - compares nextFollowUpDate with local 'today'
  * returns one of: "Upcoming", "Due Today", "Overdue"
  */
+
 function computeFollowupState(value) {
   const d = tryParseDate(value);
   if (!d) return ""; // unknown
@@ -74,6 +76,7 @@ function computeFollowupState(value) {
 /**
  * StatusBadge used for Followup State column (green/amber/rose)
  */
+
 function StatusBadge({ state }) {
   if (!state) return null;
 

@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
+import contactRoutes from "./routes/contactRoutes.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 dotenv.config();
@@ -18,6 +19,7 @@ app.use(cors({
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use("/api/contacts", contactRoutes);
 
 // Connect to DB and start server
 connectDB().then(() => {

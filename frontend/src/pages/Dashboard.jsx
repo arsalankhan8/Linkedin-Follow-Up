@@ -3,7 +3,10 @@ import React from "react";
 import { CalendarCheck, CalendarRange, Hourglass, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import DataTable from "../components/DataTable.jsx"; // global DataTable you created
-
+import { getContacts } from "@/api/contact.js";
+import { useState, useEffect } from "react";
+import AddContactModal from "../components/AddContactModal.jsx";
+import DashboardLayout from "../components/layout/DashboardLayout.jsx";
 // Small stat card used on top of dashboard
 const StatCard = ({ icon: Icon, title, value }) => {
   return (
@@ -20,48 +23,58 @@ const StatCard = ({ icon: Icon, title, value }) => {
 };
 
 export default function Dashboard() {
-  // demo rows (use the human-readable format you requested)
 
-const rows = [
-  {
-    id: 1,
-    name: "John Doe",
-    contact: "linkedin.com/john",
-    company: "Meta",
-    nextFollowUpDate: "Nov 03, 2025",
-  },
-  {
-    id: 2,
-    name: "Sarah Khan",
-    contact: "sarah@email.com",
-    company: "Google",
-    nextFollowUpDate: "Nov 04, 2025",
-  },
-  {
-    id: 3,
-    name: "Ali Raza",
-    contact: "linkedin.com/razi",
-    company: "Apple",
-    nextFollowUpDate: "Oct 30, 2025",
-  },
-];
+  // ✅ State for contacts (API data)
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const totalPages = 1; // can later use API pagination
 
+  // ✅ Fetch contacts from backend API
+  const fetchContacts = async () => {
+    try {
+      setLoading(true);
+      const res = await getContacts();
+      setContacts(res.data.contacts || []);
+    } catch (err) {
+      console.error("Failed to load contacts:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // columns expected by DataTable (keys must match row fields)
-const columns = [
-  { key: "name", label: "Name" },
-  { key: "contact", label: "LinkedIn / Email" },
-  { key: "company", label: "Company" },
-  { key: "nextFollowUpDate", label: "Next Follow Up" },
-  { key: "statusType", label: "Status" } // this will show the badge auto computed
-];
+  useEffect(() => {
+    fetchContacts();
+  }, []);
+
+  useEffect(() => {
+    fetchContacts();
+
+    // ✅ Listen for contactAdded events from modal
+    const handleContactAdded = () => {
+      fetchContacts();
+    };
+
+    window.addEventListener("contactAdded", handleContactAdded);
+
+    return () => {
+      window.removeEventListener("contactAdded", handleContactAdded);
+    };
+  }, []);
 
   // simple pagination state (hook into real API later)
-  const [page, setPage] = React.useState(1);
-  const totalPages = 3;
+
+  const columns = [
+    { key: "name", label: "Name" },
+    { key: "profileLink", label: "LinkedIn / Email" },
+    { key: "company", label: "Company" },
+    { key: "nextFollowUpDate", label: "Next Follow Up" },
+    { key: "statusType", label: "Status" },
+  ];
 
   return (
     <div className="p-6 flex flex-col gap-8">
+      {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={CalendarCheck} title="Today Follow-ups" value={12} />
         <StatCard icon={CalendarRange} title="Upcoming (7 days)" value={43} />
@@ -69,14 +82,17 @@ const columns = [
         <StatCard icon={CheckCircle2} title="Completed" value={77} />
       </div>
 
-      {/* DataTable - using the global table; pass columns, rows and pagination handlers */}
-      <DataTable
-        columns={columns}
-        rows={rows}
-        page={page}
-        totalPages={totalPages}
-        onPageChange={(p) => setPage(p)}
-      />
+      {loading ? (
+        <div className="text-center py-10 text-muted-foreground">Loading contacts...</div>
+      ) : (
+        <DataTable
+          columns={columns}
+          rows={contacts}
+          page={page}
+          totalPages={totalPages}
+          onPageChange={(p) => setPage(p)}
+        />
+      )}
     </div>
   );
 }

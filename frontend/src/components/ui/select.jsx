@@ -1,3 +1,5 @@
+// components > ui > select.jsx
+
 import React, { useState, useRef, useEffect } from "react";
 
 // Basic Select wrapper (not needed for this dropdown version, kept for backward compatibility)

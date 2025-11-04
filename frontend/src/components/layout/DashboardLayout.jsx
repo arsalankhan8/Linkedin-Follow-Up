@@ -1,3 +1,5 @@
+// components > layout > DashboardLayout.jsx 
+
 import React from "react";
 import { Link, NavLink } from "react-router-dom"; // assume react-router usage
 import { Card } from "@/components/ui/card.jsx";
@@ -7,6 +9,7 @@ import { Separator } from "@/components/ui/separator.jsx";
 import { Home, Users, Settings, Menu, Bell } from "lucide-react";
 import { Outlet } from "react-router-dom";
 import { useUserStore } from "@/store/useUserStore";
+import AddContactModal from "@/components/AddContactModal.jsx"
 
 // -----------------------------
 // Sidebar component
@@ -133,36 +136,50 @@ export function Topbar({ onToggleSidebar, title = "Dashboard", action }) {
 // DashboardLayout (default export)
 // -----------------------------
 
-export default function DashboardLayout({ children, title, action }) {
+export default function DashboardLayout({ children, title, action, onContactAdded }) {
   const [showSidebar, setShowSidebar] = React.useState(true);
+  const [openAddContact, setOpenAddContact] = React.useState(false);
 
   function toggleSidebar() {
     setShowSidebar((s) => !s);
   }
 
+  // Add contact button (only visible on desktop normally; you already used action prop)
+  const addContactButton = (
+    <Button onClick={() => setOpenAddContact(true)} className="hidden md:inline-flex">
+      Add Contact
+    </Button>
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="max-w-7xl mx-auto">
         <div className="flex">
-          {/* Sidebar (boxed style) */}
-          <div
-            className={`${showSidebar ? "block" : "hidden"} hidden md:block`}
-          >
+          <div className={`${showSidebar ? "block" : "hidden"} hidden md:block`}>
             <Sidebar />
           </div>
 
           <main className="flex-1 p-6">
-     <Topbar onToggleSidebar={toggleSidebar} title={title} action={action} />
+            {/* pass the addContactButton as Topbar action (it will render alongside notifications) */}
+            <Topbar onToggleSidebar={toggleSidebar} title={title} action={addContactButton} />
 
-
-            {/* Boxed content wrapper */}
             <div className="max-w-6xl mx-auto">
-              {/* Page inner card / container */}
-              <div className="space-y-6 mt-6">{children}</div>
+              <div className="space-y-6 mt-6">
+                {children}
+              </div>
             </div>
           </main>
         </div>
       </div>
+
+      {/* Modal mounted at layout level — ensures it is available on Dashboard */}
+      <AddContactModal
+        open={openAddContact}
+        onClose={() => setOpenAddContact(false)}
+        onSuccess={(data) => {
+          onContactAdded?.();
+        }}
+      />
     </div>
   );
 }
