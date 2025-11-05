@@ -88,11 +88,13 @@ function StatusBadge({ state }) {
 }
 
 export default function DataTable({
-  columns = [],
+  columns,
   rows = [],
-  page = 1,
-  totalPages = 5,
+  pagination = true,
+  page,
+  totalPages,
   onPageChange,
+  onEdit,
 }) {
   return (
     <Card className="mt-6">
@@ -109,8 +111,19 @@ export default function DataTable({
                 <th className="p-3 text-center">Actions</th>
               </tr>
             </thead>
-
             <tbody>
+
+              {rows.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={columns.length + 1}
+                    className="p-6 text-center text-sm text-muted-foreground"
+                  >
+                    No data found
+                  </td>
+                </tr>
+              )}
+
               {rows.map((row, i) => (
                 <tr key={row.id ?? i} className="border-b hover:bg-muted/30">
                   {columns.map((col) => {
@@ -162,9 +175,10 @@ export default function DataTable({
                     <Pen
                       className="cursor-pointer hover:opacity-80"
                       size={16}
-                      onClick={() => console.log("edit clicked", row)}
+                      onClick={() => onEdit?.(row)}
                       title="Edit"
                     />
+
                     <RotateCcw
                       className="cursor-pointer hover:opacity-80"
                       size={16}
@@ -178,25 +192,32 @@ export default function DataTable({
           </table>
         </div>
 
-        <div className="flex justify-center py-4 gap-3">
-          <Button
-            variant="outline"
-            disabled={page === 1}
-            onClick={() => onPageChange?.(page - 1)}
-          >
-            Prev
-          </Button>
-          <span className="px-2">
-            {page} / {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            disabled={page === totalPages}
-            onClick={() => onPageChange?.(page + 1)}
-          >
-            Next
-          </Button>
-        </div>
+        {/* Pagination only if enabled */}
+
+        {pagination && (
+          <div className="flex justify-end mt-4 gap-2 p-4">
+            <button
+              onClick={() => onPageChange(page - 1)}
+              disabled={page === 1}
+              className="px-3 py-1 border rounded disabled:opacity-40"
+            >
+              Prev
+            </button>
+
+            <span className="text-sm px-2">
+              Page {page} of {totalPages}
+            </span>
+
+            <button
+              onClick={() => onPageChange(page + 1)}
+              disabled={page === totalPages}
+              className="px-3 py-1 border rounded disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
       </CardContent>
     </Card>
   );

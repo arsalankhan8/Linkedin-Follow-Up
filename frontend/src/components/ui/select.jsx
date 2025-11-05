@@ -1,6 +1,7 @@
 // components > ui > select.jsx
 
 import React, { useState, useRef, useEffect } from "react";
+import { ChevronDown } from "lucide-react";
 
 // Basic Select wrapper (not needed for this dropdown version, kept for backward compatibility)
 export const Select = ({ children, ...props }) => (
@@ -13,13 +14,14 @@ export const Select = ({ children, ...props }) => (
 );
 
 // Trigger button for custom dropdown
-export const SelectTrigger = ({ children, onClick, className = "" }) => (
+export const SelectTrigger = ({ children, onClick, className = "", isOpen }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`px-3 py-2 border rounded-md bg-white flex justify-between items-center ${className}`}
+    className={`px-3 py-2 border rounded-md bg-white flex justify-between items-center gap-2 ${className}`}
   >
     {children}
+    <ChevronDown className={`size-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
   </button>
 );
 
@@ -30,7 +32,10 @@ export const SelectValue = ({ children }) => <span>{children}</span>;
 export const SelectContent = ({ children, isOpen }) => {
   if (!isOpen) return null;
   return (
-    <div className="mt-1 border rounded-md bg-white absolute z-10 shadow-md">
+    <div
+      className="mt-1 border rounded-md bg-white absolute left-0 z-10 shadow-md"
+      onClick={(e) => e.stopPropagation()} // prevents closing when clicking inside
+    >
       {children}
     </div>
   );
@@ -41,7 +46,10 @@ export const SelectItem = ({ value, children, onSelect }) => (
   <div
     data-value={value}
     className="px-3 py-1 hover:bg-slate-100 cursor-pointer"
-    onClick={() => onSelect(value)}
+    onClick={(e) => {
+      e.stopPropagation();
+      onSelect(value);
+    }}
   >
     {children}
   </div>
@@ -58,9 +66,10 @@ export const useDropdown = (initialState = false) => {
         setIsOpen(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [ref]);
+  }, []);
 
   const toggle = () => setIsOpen((prev) => !prev);
 

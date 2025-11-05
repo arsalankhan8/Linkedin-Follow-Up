@@ -1,6 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import { connectDB } from './config/db.js';
+import { connectDB } from "./config/db.js";
 import authRoutes from './routes/authRoutes.js';
 import contactRoutes from "./routes/contactRoutes.js";
 import cors from "cors";
@@ -14,8 +14,10 @@ app.use(cookieParser());
 // Use environment variable for frontend origin
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
+
 
 // Routes
 app.use('/api/auth', authRoutes);

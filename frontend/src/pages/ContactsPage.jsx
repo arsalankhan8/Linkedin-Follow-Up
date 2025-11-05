@@ -1,8 +1,11 @@
 // src/pages/ContactsPage.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import DataTable from "../components/DataTable.jsx";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { getContacts } from "@/api/contact.js";
+import AddContactModal from "../components/AddContactModal.jsx";
+
 import {
   SelectTrigger,
   SelectValue,
@@ -20,56 +23,85 @@ const StatCard = ({ title, value }) => (
   </Card>
 );
 
+
 export default function ContactsPage() {
+
+
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState("All"); // default all
-  const [stateFilter, setStateFilter] = useState("All"); // default all
+  const [totalPages, setTotalPages] = useState(1);
+
+  const [contacts, setContacts] = useState([]); // paginated data
+  const [allContacts, setAllContacts] = useState([]); // full list for stats
+
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [stateFilter, setStateFilter] = useState("All");
   const [searchText, setSearchText] = useState("");
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState(null);
+
+  function handleEdit(contact) {
+    setEditingContact(contact);
+    setModalOpen(true);
+  }
+
+  // Fetch all contacts ONCE for stats
+  useEffect(() => {
+    const refreshContacts = async () => {
+      const res = await getContacts({ limit: 9999, page: 1 });
+      setAllContacts(res.data.contacts);
+    };
+
+    // ✅ Initial load
+    refreshContacts();
+
+    // ✅ Listen for new contact event
+    const handleContactAdded = () => {
+      refreshContacts();
+    };
+
+    window.addEventListener("contactAdded", handleContactAdded);
+
+    return () => {
+      window.removeEventListener("contactAdded", handleContactAdded);
+    };
+  }, []);
+
+  async function fetchContacts() {
+    const res = await getContacts({ limit: 9999, page: 1 });
+    setAllContacts(res.data.contacts);
+  }
+
 
   const statusDropdown = useDropdown();
   const stateDropdown = useDropdown();
 
-  const rows = [
-    {
-      id: 1,
-      name: "John Doe",
-      contact: "linkedin.com/john",
-      company: "Meta",
-      role: "Hiring Manager",
-      lastMessage: "Sent profile intro",
-      nextFollowUpDate: "2025-11-03",
-      status: "Pending Reply",
-    },
-    {
-      id: 2,
-      name: "Sarah Khan",
-      contact: "sarah@email.com",
-      company: "Google",
-      role: "Recruiter",
-      lastMessage: "She asked for CV update",
-      nextFollowUpDate: "2025-11-02",
-      status: "Follow-Up",
-    },
-    {
-      id: 3,
-      name: "Ali Raza",
-      contact: "linkedin.com/razi",
-      company: "Apple",
-      role: "Recruiter",
-      lastMessage: "Waiting for response",
-      nextFollowUpDate: "2025-10-30",
-      status: "Follow-Up",
-    },
-  ];
+  const rows = allContacts.map((c) => ({
+    ...c,
+    status:
+      c.status === "Follow Up"
+        ? "Follow-Up"
+        : c.status === "Pending"
+          ? "Pending Reply"
+          : c.status,
+  }));
 
-  const today = new Date().toISOString().slice(0, 10);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // normalize
+
   const rowsWithState = rows.map((r) => {
+    const d = new Date(r.nextFollowUpDate);
+    d.setHours(0, 0, 0, 0); // normalize database date too
+
     let state;
-    if (r.nextFollowUpDate > today) state = "Upcoming";
-    else if (r.nextFollowUpDate === today) state = "Due Today";
+    if (d > today) state = "Upcoming";
+    else if (d.getTime() === today.getTime()) state = "Due Today";
     else state = "Overdue";
+
     return { ...r, statusType: state };
   });
+
 
   const filteredRows = useMemo(() => {
     return rowsWithState.filter((r) => {
@@ -84,9 +116,15 @@ export default function ContactsPage() {
     });
   }, [rowsWithState, statusFilter, stateFilter, searchText]);
 
+  const itemsPerPage = 5;
+  const start = (page - 1) * itemsPerPage;
+  const paginatedRows = filteredRows.slice(start, start + itemsPerPage);
+  const totalPagesCalculated = Math.ceil(filteredRows.length / itemsPerPage);
+
+
   const columns = [
     { key: "name", label: "Name" },
-    { key: "contact", label: "LinkedIn / Email" },
+    { key: "profileLink", label: "LinkedIn / Email" },
     { key: "company", label: "Company" },
     { key: "role", label: "Role" },
     { key: "lastMessage", label: "Last Message" },
@@ -99,15 +137,20 @@ export default function ContactsPage() {
     <div className="space-y-6 p-6 relative">
       {/* stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatCard title="Total Contacts" value={rows.length} />
+        <StatCard title="Total Contacts" value={allContacts.length} />
         <StatCard
           title="Follow Ups Today"
-          value={rows.filter((r) => r.nextFollowUpDate === today).length}
+          value={allContacts.filter((r) => {
+            const d = new Date(r.nextFollowUpDate);
+            d.setHours(0, 0, 0, 0);
+            return d.getTime() === today.getTime();
+          }).length}
         />
         <StatCard
           title="Pending Replies"
-          value={rows.filter((r) => r.status === "Pending Reply").length}
+          value={allContacts.filter((r) => r.status === "Pending").length}
         />
+
       </div>
 
       {/* Filters */}
@@ -125,13 +168,18 @@ export default function ContactsPage() {
         </div>
 
         {/* Status Filter */}
-        <div className="relative">
+        <div className="relative" ref={statusDropdown.ref}>
           <label className="block text-sm font-medium mb-1">
             Filter By Status
           </label>
-          <SelectTrigger onClick={statusDropdown.toggle} className="w-48">
+          <SelectTrigger
+            onClick={statusDropdown.toggle}
+            isOpen={statusDropdown.isOpen}
+            className="w-48"
+          >
             <SelectValue>{statusFilter}</SelectValue>
           </SelectTrigger>
+
           <SelectContent isOpen={statusDropdown.isOpen}>
             {["All", "Follow-Up", "Pending Reply"].map((s) => (
               <SelectItem
@@ -149,13 +197,18 @@ export default function ContactsPage() {
         </div>
 
         {/* Followup State Filter */}
-        <div className="relative">
+        <div className="relative" ref={stateDropdown.ref}>
           <label className="block text-sm font-medium mb-1">
             Filter By State
           </label>
-          <SelectTrigger onClick={stateDropdown.toggle} className="w-48">
+          <SelectTrigger
+            onClick={stateDropdown.toggle}
+            isOpen={stateDropdown.isOpen}
+            className="w-48"
+          >
             <SelectValue>{stateFilter}</SelectValue>
           </SelectTrigger>
+
           <SelectContent isOpen={stateDropdown.isOpen}>
             {["All", "Upcoming", "Due Today", "Overdue"].map((s) => (
               <SelectItem
@@ -171,15 +224,28 @@ export default function ContactsPage() {
             ))}
           </SelectContent>
         </div>
+
       </div>
 
       <DataTable
         columns={columns}
-        rows={filteredRows}
+        rows={paginatedRows}
+        pagination={true}
         page={page}
-        totalPages={1}
+        totalPages={totalPagesCalculated}
         onPageChange={(p) => setPage(p)}
+        onEdit={handleEdit}
       />
+
+      <AddContactModal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setEditingContact(null); }}
+        editData={editingContact} // pass row here
+        onSuccess={() => {
+          fetchContacts(); // refresh
+        }}
+      />
+
     </div>
   );
 }

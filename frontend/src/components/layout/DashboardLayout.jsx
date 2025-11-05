@@ -153,7 +153,7 @@ export default function DashboardLayout({ children, title, action, onContactAdde
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-8xl mx-auto">
         <div className="flex">
           <div className={`${showSidebar ? "block" : "hidden"} hidden md:block`}>
             <Sidebar />
@@ -163,7 +163,7 @@ export default function DashboardLayout({ children, title, action, onContactAdde
             {/* pass the addContactButton as Topbar action (it will render alongside notifications) */}
             <Topbar onToggleSidebar={toggleSidebar} title={title} action={addContactButton} />
 
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-8xl mx-auto">
               <div className="space-y-6 mt-6">
                 {children}
               </div>

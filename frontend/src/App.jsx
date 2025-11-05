@@ -35,11 +35,6 @@ export default function App() {
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
         {/* Protected + Layout */}
-        {/* <Route element={<ProtectedRoute />}>
-          <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-          </Route>
-        </Route> */}
 
         <Route element={<ProtectedRoute />}>
           {/* Dashboard */}
@@ -64,6 +59,10 @@ export default function App() {
             element={
               <DashboardLayout
                 title="Contacts Dashboard"
+                onContactAdded={() => {
+                  // ✅ trigger global refresh event
+                  window.dispatchEvent(new Event("contactAdded"));
+                }}
                 action={
                   <Button size="sm">
                     <Plus className="w-4 h-4 mr-1" /> Add Contact
@@ -74,6 +73,7 @@ export default function App() {
               </DashboardLayout>
             }
           />
+
         </Route>
 
 

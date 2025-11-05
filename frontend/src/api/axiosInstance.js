@@ -13,7 +13,6 @@ const api = axios.create({
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
-
 /**
  * Attach access token (if present) to Authorization header
  */

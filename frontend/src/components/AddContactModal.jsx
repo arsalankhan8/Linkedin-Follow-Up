@@ -1,9 +1,8 @@
 // src/components/AddContactModal.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { createContact } from "@/api/contact";
+import { createContact, updateContact } from "@/api/contact";
 import { toast } from "sonner";
-
 /**
  * AddContactModal
  * props:
@@ -11,7 +10,7 @@ import { toast } from "sonner";
  *  - onClose (fn)
  *  - onSuccess (fn) optional -> called after successful POST
  */
-export default function AddContactModal({ open, onClose, onSuccess, onContactAdded }) {
+export default function AddContactModal({ open, onClose, onSuccess, onContactAdded, editData }) {
 
   const [name, setName] = useState("");
   const [profileLink, setProfileLink] = useState("");
@@ -24,9 +23,30 @@ export default function AddContactModal({ open, onClose, onSuccess, onContactAdd
   const [loading, setLoading] = useState(false);
   const hiddenDateRef = useRef(null);
 
-  // reset form when opened/closed
+
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+
+    if (editData) {
+      setName(editData.name || "");
+      setProfileLink(editData.profileLink || "");
+      setCompany(editData.company || "");
+      setRole(editData.role || "");
+      setLastMessage(editData.lastMessage || "");
+      setStatus(editData.status || "Follow Up");
+
+      // Pre-fill Date
+      if (editData.nextFollowUpDate) {
+        const d = new Date(editData.nextFollowUpDate);
+        const iso = d.toISOString();
+        setDateISO(iso);
+        setDatePretty(formatPretty(iso));
+      } else {
+        setDateISO("");
+        setDatePretty("");
+      }
+    } else {
+      // If adding new contact
       setName("");
       setProfileLink("");
       setCompany("");
@@ -35,9 +55,9 @@ export default function AddContactModal({ open, onClose, onSuccess, onContactAdd
       setDateISO("");
       setDatePretty("");
       setStatus("Follow Up");
-      setLoading(false);
     }
-  }, [open]);
+  }, [open, editData]);
+
 
   if (!open) return null;
 
@@ -77,18 +97,40 @@ export default function AddContactModal({ open, onClose, onSuccess, onContactAdd
   }
 
   async function handleSubmit() {
-    // basic validation
+
+    // ---- VALIDATION RULES ----
     if (!name.trim()) {
-      toast.error("Name is required.");
-      return;
+      return toast.error("Name is required.");
     }
+    if (name.length > 30) {
+      return toast.error("Name must be 30 characters or less.");
+    }
+
+    // Profile can be EMAIL or LINKEDIN URL
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const linkedinRegex = /^https?:\/\/(www\.)?linkedin\.com\/.*$/i;
+
     if (!profileLink.trim()) {
-      toast.error("LinkedIn profile or email is required.");
-      return;
+      return toast.error("LinkedIn profile or email is required.");
     }
+    if (!emailRegex.test(profileLink) && !linkedinRegex.test(profileLink)) {
+      return toast.error("Enter a valid email or LinkedIn profile URL.");
+    }
+
+    if (company.length > 40) {
+      return toast.error("Company name must be 40 characters or less.");
+    }
+
+    if (role.length > 40) {
+      return toast.error("Role must be 40 characters or less.");
+    }
+
+    if (lastMessage.length > 300) {
+      return toast.error("Last message must be 300 characters or less.");
+    }
+
     if (!dateISO) {
-      toast.error("Please choose a Next Follow-up date.");
-      return;
+      return toast.error("Please choose a Next Follow-up date.");
     }
 
     const payload = {
@@ -97,31 +139,35 @@ export default function AddContactModal({ open, onClose, onSuccess, onContactAdd
       company: company.trim(),
       role: role.trim(),
       lastMessage: lastMessage.trim(),
-      // send ISO date (server expects Date type)
       nextFollowUpDate: dateISO,
-      // status enum: Follow Up | Pending Reply | Done
-      status: status,
+      status,
     };
 
     setLoading(true);
 
-try {
-  const res = await createContact(payload);
-  toast.success("Contact added successfully! 🎉");
-  onClose?.();
-  onSuccess?.(res.data);
-  
-  // ✅ Trigger parent refresh
-  onContactAdded?.();
-  
-} catch (err) {
-  console.error(err);
-  toast.error("Failed to save contact. Please try again.");
-} finally {
-  setLoading(false);
-}
+    try {
+      if (editData?._id) {
+        // UPDATE MODE
+        await updateContact(editData._id, payload);
+        toast.success("Contact updated successfully!");
+      } else {
+        // CREATE MODE
+        await createContact(payload);
+        toast.success("Contact added successfully!");
+      }
 
-  };
+      onClose?.();
+      onSuccess?.();
+      onContactAdded?.();
+    }  catch (err) {
+  console.error(err);
+  toast.error(err?.response?.data?.message || "Something went wrong. Try again.");
+}
+ finally {
+      setLoading(false);
+    }
+
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -135,7 +181,9 @@ try {
       <div className="relative bg-white rounded-2xl w-full max-w-lg mx-4 shadow-xl z-10">
         <div className="p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Add New Contact</h2>
+            <h2 className="text-lg font-semibold">
+              {editData ? "Edit Contact" : "Add New Contact"}
+            </h2>
             <button
               className="text-slate-500 hover:text-slate-700"
               onClick={() => onClose?.()}
@@ -226,7 +274,7 @@ try {
                   className="w-full border rounded-md px-3 py-2"
                 >
                   <option value="Follow Up">Follow Up</option>
-                  <option value="Pending Reply">Pending Reply</option>
+                  <option value="Pending">Pending Reply</option>
                   <option value="Done">Done</option>
                 </select>
               </div>
@@ -242,8 +290,9 @@ try {
               className="bg-indigo-600 text-white hover:bg-indigo-700"
               disabled={loading}
             >
-              {loading ? "Saving..." : "Save Contact"}
+              {loading ? "Saving..." : editData ? "Update Contact" : "Save Contact"}
             </Button>
+
 
           </div>
         </div>

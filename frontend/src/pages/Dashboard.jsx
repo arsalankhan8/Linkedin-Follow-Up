@@ -27,21 +27,54 @@ export default function Dashboard() {
   // ✅ State for contacts (API data)
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const totalPages = 1; // can later use API pagination
 
   // ✅ Fetch contacts from backend API
+
   const fetchContacts = async () => {
     try {
       setLoading(true);
-      const res = await getContacts();
-      setContacts(res.data.contacts || []);
+      const res = await getContacts({ limit: 7 });
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const mapped = (res.data.contacts || []).map((c) => {
+        const d = new Date(c.nextFollowUpDate);
+        d.setHours(0, 0, 0, 0);
+
+        let state;
+        if (d > today) state = "Upcoming";
+        else if (d.getTime() === today.getTime()) state = "Due Today";
+        else state = "Overdue";
+
+        return { ...c, statusType: state };
+      });
+
+      setContacts(mapped);
     } catch (err) {
       console.error("Failed to load contacts:", err);
     } finally {
       setLoading(false);
     }
   };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todayCount = contacts.filter(c => {
+    const d = new Date(c.nextFollowUpDate);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime() === today.getTime();
+  }).length;
+
+  const upcomingCount = contacts.filter(c => {
+    const d = new Date(c.nextFollowUpDate);
+    return d > today;
+  }).length;
+
+  const pendingCount = contacts.filter(c => c.status === "Pending").length;
+  const completedCount = contacts.filter(c => c.status === "Completed").length;
+
 
   useEffect(() => {
     fetchContacts();
@@ -74,24 +107,22 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 flex flex-col gap-8">
-      {/* Stat Cards */}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={CalendarCheck} title="Today Follow-ups" value={12} />
-        <StatCard icon={CalendarRange} title="Upcoming (7 days)" value={43} />
-        <StatCard icon={Hourglass} title="Pending" value={18} />
-        <StatCard icon={CheckCircle2} title="Completed" value={77} />
+        <StatCard icon={CalendarCheck} title="Today Follow-ups" value={todayCount} />
+        <StatCard icon={CalendarRange} title="Upcoming (7 days)" value={upcomingCount} />
+        <StatCard icon={Hourglass} title="Pending" value={pendingCount} />
+        <StatCard icon={CheckCircle2} title="Completed" value={completedCount} />
+
       </div>
 
       {loading ? (
         <div className="text-center py-10 text-muted-foreground">Loading contacts...</div>
       ) : (
-        <DataTable
-          columns={columns}
-          rows={contacts}
-          page={page}
-          totalPages={totalPages}
-          onPageChange={(p) => setPage(p)}
-        />
+        <DataTable columns={columns} rows={contacts} pagination={false} />
+
+
+
       )}
     </div>
   );

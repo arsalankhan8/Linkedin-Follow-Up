@@ -53,31 +53,31 @@ router.post("/google-login", async (req, res) => {
     } else {
       // Update existing user with latest Google profile data
       let shouldSave = false;
-      
+
       // Always update avatar if picture is provided (for account switching)
       if (picture && user.avatar !== picture) {
         user.avatar = picture;
         shouldSave = true;
       }
-      
+
       // Update name if different
       if (name && user.name !== name) {
         user.name = name;
         shouldSave = true;
       }
-      
+
       // Update googleId if different
       if (googleId && user.googleId !== googleId) {
         user.googleId = googleId;
         shouldSave = true;
       }
-      
+
       // Ensure user is verified
       if (!user.isVerified) {
         user.isVerified = true;
         shouldSave = true;
       }
-      
+
       if (shouldSave) {
         await user.save();
       }
@@ -92,6 +92,16 @@ router.post("/google-login", async (req, res) => {
       sameSite: "strict",
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
+
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: false,     
+    //   sameSite: "none",   
+    //   path: "/",          
+    //   maxAge: 30 * 24 * 60 * 60 * 1000
+    // });
+
+
 
     res.status(200).json({
       user: {
@@ -268,6 +278,16 @@ router.post("/login", loginLimiter, async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: false,      // ✅ localhost needs false
+    //   sameSite: "none",   // ✅ allows cross-site cookie
+    //   path: "/",          // ✅ critical - allow sending to all routes
+    //   maxAge: 30 * 24 * 60 * 60 * 1000
+    // });
+
+
+
     res.status(200).json({
       user: {
         id: user._id,
@@ -288,15 +308,28 @@ router.post("/login", loginLimiter, async (req, res) => {
 router.post("/refresh", async (req, res) => {
   try {
     const token = req.cookies.refreshToken;
-    if (!token)
+    if (!token) {
       return res.status(401).json({ message: "Refresh token missing." });
+    }
 
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+
+    // Generate a fresh access token
     const newAccessToken = generateAccessToken(decoded.userId);
 
-    res.status(200).json({ accessToken: newAccessToken });
+    // ✅ Re-set the SAME refresh token so browser includes it consistently
+    res.cookie("refreshToken", token, {
+      httpOnly: true,
+      secure: false,    // localhost only
+      sameSite: "none", // allow cross-origin cookie
+      path: "/",        // cookie available everywhere
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({ accessToken: newAccessToken });
+
   } catch (err) {
-    res.status(401).json({ message: "Invalid or expired refresh token." });
+    return res.status(401).json({ message: "Invalid or expired refresh token." });
   }
 });
 
@@ -389,11 +422,21 @@ router.post("/reset-password", async (req, res) => {
 
 router.post("/logout", async (req, res) => {
   try {
+
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: true,
       sameSite: "strict",
     });
+
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: false,      // ✅ localhost needs false
+    //   sameSite: "none",   // ✅ allows cross-site cookie
+    //   path: "/",          // ✅ critical - allow sending to all routes
+    //   maxAge: 30 * 24 * 60 * 60 * 1000
+    // });
+
 
     res.status(200).json({ message: "Logged out successfully." });
   } catch (err) {
