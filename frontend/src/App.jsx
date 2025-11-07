@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import ContactsPage from "./pages/ContactsPage.jsx";
 import { Toaster } from "sonner";
-
+import TemplatesPage from "./pages/TemplatesPage.jsx";
 export default function App() {
   const fetchUser = useUserStore((s) => s.fetchUser);
 
@@ -37,7 +37,9 @@ export default function App() {
         {/* Protected + Layout */}
 
         <Route element={<ProtectedRoute />}>
+
           {/* Dashboard */}
+
           <Route
             path="/dashboard"
             element={
@@ -70,9 +72,15 @@ export default function App() {
                 }
               >
                 <ContactsPage />
+
+
+
+
               </DashboardLayout>
             }
           />
+
+          <Route path="/templates" element={<DashboardLayout> <TemplatesPage /> </DashboardLayout>} />
 
         </Route>
 

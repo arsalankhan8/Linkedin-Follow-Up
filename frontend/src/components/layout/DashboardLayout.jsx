@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card.jsx";
 import { Button } from "@/components/ui/button.jsx";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator.jsx";
-import { Home, Users, Settings, Menu, Bell } from "lucide-react";
+import { Home, Users, Settings, Menu, Bell, FileText } from "lucide-react";
 import { Outlet } from "react-router-dom";
 import { useUserStore } from "@/store/useUserStore";
 import AddContactModal from "@/components/AddContactModal.jsx"
@@ -19,6 +19,7 @@ export function Sidebar({ className = "", collapsed = false }) {
   const nav = [
     { name: "Dashboard", to: "/dashboard", icon: Home },
     { name: "Contacts", to: "/contacts", icon: Users },
+    { name: "Templates", to: "/templates", icon: FileText }, 
     { name: "Settings", to: "/settings", icon: Settings },
   ];
 
