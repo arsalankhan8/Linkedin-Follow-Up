@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { createContact, updateContact } from "@/api/contact";
 import { toast } from "sonner";
+import { Calendar } from "lucide-react";
+
 /**
  * AddContactModal
  * props:
@@ -159,11 +161,11 @@ export default function AddContactModal({ open, onClose, onSuccess, onContactAdd
       onClose?.();
       onSuccess?.();
       onContactAdded?.();
-    }  catch (err) {
-  console.error(err);
-  toast.error(err?.response?.data?.message || "Something went wrong. Try again.");
-}
- finally {
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Something went wrong. Try again.");
+    }
+    finally {
       setLoading(false);
     }
 
@@ -253,9 +255,10 @@ export default function AddContactModal({ open, onClose, onSuccess, onContactAdd
                 <div
                   role="button"
                   onClick={openDatePicker}
-                  className="w-full border rounded-md px-3 py-2 cursor-pointer"
+                  className="w-full border rounded-md px-3 py-2 cursor-pointer flex items-center justify-between"
                 >
-                  {datePretty || "Pick a date"}
+                  <span>{datePretty || "Pick a date"}</span>
+                  <Calendar className="text-gray-800" size={18} />
                 </div>
                 {/* hidden native date input used to pick */}
                 <input

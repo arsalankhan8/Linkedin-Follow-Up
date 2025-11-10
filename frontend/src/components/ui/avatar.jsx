@@ -1,3 +1,5 @@
+// src > Components > ui > Avatar.jsx 
+
 "use client"
 
 import * as React from "react"

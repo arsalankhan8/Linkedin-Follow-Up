@@ -7,6 +7,8 @@ import { getContacts } from "@/api/contact.js";
 import { useState, useEffect } from "react";
 import AddContactModal from "../components/AddContactModal.jsx";
 import DashboardLayout from "../components/layout/DashboardLayout.jsx";
+import { staticCategories } from "../pages/TemplatesPage.jsx";
+
 // Small stat card used on top of dashboard
 const StatCard = ({ icon: Icon, title, value }) => {
   return (
@@ -27,6 +29,9 @@ export default function Dashboard() {
   // ✅ State for contacts (API data)
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+const [categories, setCategories] = useState(staticCategories);
+
 
   // ✅ Fetch contacts from backend API
 
@@ -119,11 +124,12 @@ export default function Dashboard() {
       {loading ? (
         <div className="text-center py-10 text-muted-foreground">Loading contacts...</div>
       ) : (
-        <DataTable columns={columns} rows={contacts} pagination={false} />
+        <DataTable columns={columns} rows={contacts} pagination={false}   categories={categories} />
 
 
 
       )}
+
     </div>
   );
 }

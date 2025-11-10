@@ -1,4 +1,4 @@
-// src/routes/user.js
+// backend > routes / user.js
 import express from "express";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -41,7 +41,8 @@ router.post("/avatar/presign", requireAuth, async (req, res) => {
     // public URL where the file will be served (depends on bucket settings)
     const publicUrl = `https://${BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 
-    res.status(200).json({ uploadUrl, publicUrl, key });
+    res.status(200).json({ uploadUrl, key });
+
   } catch (err) {
     console.error("Presign error:", err);
     res.status(500).json({ message: "Failed to create presigned url" });
@@ -51,15 +52,15 @@ router.post("/avatar/presign", requireAuth, async (req, res) => {
 // POST /api/user/avatar (save final avatar url)
 router.post("/avatar", requireAuth, async (req, res) => {
   try {
-    const { avatarUrl } = req.body;
-    if (!avatarUrl)
-      return res.status(400).json({ message: "avatarUrl required" });
+    const { key } = req.body;
+    if (!key) return res.status(400).json({ message: "key required" });
 
     const user = await User.findByIdAndUpdate(
       req.userId,
-      { avatar: avatarUrl },
+      { avatar: key },
       { new: true, select: "_id name email avatar" }
     );
+
 
     if (!user) return res.status(404).json({ message: "User not found" });
 

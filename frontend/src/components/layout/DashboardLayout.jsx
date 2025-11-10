@@ -19,13 +19,13 @@ export function Sidebar({ className = "", collapsed = false }) {
   const nav = [
     { name: "Dashboard", to: "/dashboard", icon: Home },
     { name: "Contacts", to: "/contacts", icon: Users },
-    { name: "Templates", to: "/templates", icon: FileText }, 
+    { name: "Templates", to: "/templates", icon: FileText },
     { name: "Settings", to: "/settings", icon: Settings },
   ];
 
   return (
     <aside
-      className={`w-64 bg-white border-r border-slate-200 p-4 flex flex-col ${className}`}
+      className={`w-64 bg-white h-[100vh] border-r border-slate-200 p-4 flex flex-col ${className}`}
       aria-label="Sidebar"
     >
       <div className="flex items-center gap-3 px-2 py-2">
@@ -83,6 +83,26 @@ export function Topbar({ onToggleSidebar, title = "Dashboard", action }) {
   const user = useUserStore((s) => s.user);
   const loading = useUserStore((s) => s.loading);
 
+  function getAvatarSrc() {
+    if (!user?.avatar) return null;
+
+    // 1️⃣ Google avatar (http URL)
+    if (user.avatar.startsWith("http")) {
+      // fix size issue for Google avatars
+      const baseUrl = user.avatar.split("=")[0]; // remove existing size
+      return `${baseUrl}=s200`; // default 200px size
+    }
+
+    // 2️⃣ S3 avatar (stored as key)
+    if (import.meta.env.VITE_S3_BUCKET && import.meta.env.VITE_AWS_REGION) {
+      return `https://${import.meta.env.VITE_S3_BUCKET}.s3.${import.meta.env.VITE_AWS_REGION}.amazonaws.com/${user.avatar}`;
+    }
+
+    // 3️⃣ fallback
+    return null;
+  }
+
+
   const getFallbackInitial = () => {
     if (user?.name) return user.name.charAt(0).toUpperCase();
     if (user?.email) return user.email.charAt(0).toUpperCase();
@@ -120,12 +140,10 @@ export function Topbar({ onToggleSidebar, title = "Dashboard", action }) {
         {!loading && user && (
           <div className="flex items-center gap-2">
             <Avatar key={user?.avatar || user?.id}>
-              <AvatarImage
-                src={user?.avatar || undefined}
-                alt={user?.name || user?.email || "User"}
-              />
+              <AvatarImage src={getAvatarSrc() || undefined} />
               <AvatarFallback>{getFallbackInitial()}</AvatarFallback>
             </Avatar>
+
           </div>
         )}
       </div>

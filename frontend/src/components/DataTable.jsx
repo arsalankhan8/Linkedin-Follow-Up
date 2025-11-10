@@ -3,8 +3,10 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, RotateCcw, Pen } from "lucide-react";
-
+import { CheckCircle2, Send, Pen } from "lucide-react";
+import FollowUpModal from "./FollowUpModal";
+import { useState } from "react";
+import { staticCategories } from "../pages/TemplatesPage.jsx"; // adjust path if needed
 /**
  * tryParseDate - robustly parse a date string that may be:
  * - ISO 'YYYY-MM-DD'
@@ -95,7 +97,22 @@ export default function DataTable({
   totalPages,
   onPageChange,
   onEdit,
+  categories = []
 }) {
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+
+  const handleSendClick = (row) => {
+    setSelectedRow(row);
+    setModalOpen(true);
+  };
+
+  const handleSendFollowUp = (message, row) => {
+    console.log("Sending follow-up:", message, row);
+    // TODO: call your API here
+  };
+
   return (
     <Card className="mt-6">
       <CardContent className="p-0">
@@ -179,12 +196,12 @@ export default function DataTable({
                       title="Edit"
                     />
 
-                    <RotateCcw
-                      className="cursor-pointer hover:opacity-80"
+                    <Send
                       size={16}
-                      onClick={() => console.log("reschedule clicked", row)}
-                      title="Reschedule"
+                      className="cursor-pointer hover:opacity-80"
+                      onClick={() => handleSendClick(row)}
                     />
+
                   </td>
                 </tr>
               ))}
@@ -218,7 +235,16 @@ export default function DataTable({
           </div>
         )}
 
+        <FollowUpModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          row={selectedRow || {}}
+          onSend={handleSendFollowUp}
+          categories={categories}
+        />
+
       </CardContent>
     </Card>
   );
+
 }

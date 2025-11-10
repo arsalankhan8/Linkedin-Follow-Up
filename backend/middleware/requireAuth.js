@@ -1,3 +1,5 @@
+// backend > middleware > requireAuth.js
+
 import jwt from "jsonwebtoken";
 
 const requireAuth = (req, res, next) => {

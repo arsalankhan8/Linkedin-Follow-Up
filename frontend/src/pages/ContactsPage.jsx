@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getContacts } from "@/api/contact.js";
 import AddContactModal from "../components/AddContactModal.jsx";
+import { staticCategories } from "../pages/TemplatesPage.jsx"; // adjust path if needed
 
 import {
   SelectTrigger,
@@ -40,6 +41,9 @@ export default function ContactsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
 
+
+  const [categories, setCategories] = useState(staticCategories);
+
   function handleEdit(contact) {
     setEditingContact(contact);
     setModalOpen(true);
@@ -50,6 +54,7 @@ export default function ContactsPage() {
     const refreshContacts = async () => {
       const res = await getContacts({ limit: 9999, page: 1 });
       setAllContacts(res.data.contacts);
+
     };
 
     // ✅ Initial load
@@ -88,19 +93,22 @@ export default function ContactsPage() {
 
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // normalize
+  today.setHours(0, 0, 0, 0);
 
-  const rowsWithState = rows.map((r) => {
-    const d = new Date(r.nextFollowUpDate);
-    d.setHours(0, 0, 0, 0); // normalize database date too
+  const rowsWithState = rows.map(r => {
+    const followDate = r.nextFollowUpDate ? new Date(r.nextFollowUpDate) : null;
+    let statusType = null; // only followup states
 
-    let state;
-    if (d > today) state = "Upcoming";
-    else if (d.getTime() === today.getTime()) state = "Due Today";
-    else state = "Overdue";
+    if (followDate) {
+      followDate.setHours(0, 0, 0, 0);
+      if (followDate.getTime() === today.getTime()) statusType = "Due Today";
+      else if (followDate < today) statusType = "Overdue";
+      else statusType = "Upcoming";
+    }
 
-    return { ...r, statusType: state };
+    return { ...r, statusType };
   });
+
 
 
   const filteredRows = useMemo(() => {
@@ -112,9 +120,12 @@ export default function ContactsPage() {
       const matchesSearch =
         r.name.toLowerCase().includes(searchText.toLowerCase()) ||
         r.company.toLowerCase().includes(searchText.toLowerCase());
+
       return matchesStatus && matchesState && matchesSearch;
     });
   }, [rowsWithState, statusFilter, stateFilter, searchText]);
+
+
 
   const itemsPerPage = 5;
   const start = (page - 1) * itemsPerPage;
@@ -140,15 +151,17 @@ export default function ContactsPage() {
         <StatCard title="Total Contacts" value={allContacts.length} />
         <StatCard
           title="Follow Ups Today"
-          value={allContacts.filter((r) => {
-            const d = new Date(r.nextFollowUpDate);
-            d.setHours(0, 0, 0, 0);
-            return d.getTime() === today.getTime();
-          }).length}
+          value={rowsWithState.filter(r => r.statusType === "Due Today").length}
         />
+
+        <StatCard
+          title="Overdue"
+          value={rowsWithState.filter(r => r.statusType === "Overdue").length}
+        />
+
         <StatCard
           title="Pending Replies"
-          value={allContacts.filter((r) => r.status === "Pending").length}
+          value={rows.filter(r => r.status === "Pending Reply").length}
         />
 
       </div>
@@ -210,7 +223,7 @@ export default function ContactsPage() {
           </SelectTrigger>
 
           <SelectContent isOpen={stateDropdown.isOpen}>
-            {["All", "Upcoming", "Due Today", "Overdue"].map((s) => (
+            {["All", "Overdue", "Upcoming", "Due Today"].map((s) => (
               <SelectItem
                 key={s}
                 value={s}
@@ -223,6 +236,8 @@ export default function ContactsPage() {
               </SelectItem>
             ))}
           </SelectContent>
+
+
         </div>
 
       </div>
@@ -235,6 +250,7 @@ export default function ContactsPage() {
         totalPages={totalPagesCalculated}
         onPageChange={(p) => setPage(p)}
         onEdit={handleEdit}
+        categories={categories}
       />
 
       <AddContactModal
