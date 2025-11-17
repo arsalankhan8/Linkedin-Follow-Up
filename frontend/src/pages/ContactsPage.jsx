@@ -14,19 +14,18 @@ import {
   useDropdown,
 } from "../components/ui/select.jsx";
 
-const StatCard = ({ title, value }) => (
-  <Card className="rounded-2xl shadow-sm">
-    <CardContent className="p-4">
-      <p className="text-sm text-muted-foreground">{title}</p>
-      <p className="text-xl font-bold">{value}</p>
+const StatCard = ({ title, value, accentColor = "border-indigo-500" }) => (
+  <Card
+    className={`rounded-2xl shadow-sm hover:shadow-md transition-shadow border-l-4 ${accentColor} bg-white`}
+  >
+    <CardContent className="p-5">
+      <p className="text-sm font-medium text-gray-600">{title}</p>
+      <p className="mt-1 text-3xl font-semibold text-gray-900">{value}</p>
     </CardContent>
   </Card>
 );
 
-
 export default function ContactsPage() {
-
-
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -40,8 +39,7 @@ export default function ContactsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
 
-
-  const [categories, setCategories] = useState(getCategoriesWithTemplates );
+  const [categories, setCategories] = useState(getCategoriesWithTemplates);
 
   function handleEdit(contact) {
     setEditingContact(contact);
@@ -53,7 +51,6 @@ export default function ContactsPage() {
     const refreshContacts = async () => {
       const res = await getContacts({ limit: 9999, page: 1 });
       setAllContacts(res.data.contacts);
-
     };
 
     // ✅ Initial load
@@ -76,18 +73,18 @@ export default function ContactsPage() {
     setAllContacts(res.data.contacts);
   }
 
-      useEffect(() => {
-        const fetchTemplates = async () => {
-            try {
-                const mergedCategories = await getCategoriesWithTemplates();
-                setCategories(mergedCategories);
-            } catch (err) {
-                console.error("Failed to load templates:", err);
-            }
-        };
-    
-        fetchTemplates();
-    }, []);
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const mergedCategories = await getCategoriesWithTemplates();
+        setCategories(mergedCategories);
+      } catch (err) {
+        console.error("Failed to load templates:", err);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
 
   const statusDropdown = useDropdown();
   const stateDropdown = useDropdown();
@@ -98,15 +95,14 @@ export default function ContactsPage() {
       c.status === "Follow Up"
         ? "Follow-Up"
         : c.status === "Pending"
-          ? "Pending Reply"
-          : c.status,
+        ? "Pending Reply"
+        : c.status,
   }));
-
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const rowsWithState = rows.map(r => {
+  const rowsWithState = rows.map((r) => {
     const followDate = r.nextFollowUpDate ? new Date(r.nextFollowUpDate) : null;
     let statusType = null; // only followup states
 
@@ -119,8 +115,6 @@ export default function ContactsPage() {
 
     return { ...r, statusType };
   });
-
-
 
   const filteredRows = useMemo(() => {
     return rowsWithState.filter((r) => {
@@ -136,13 +130,10 @@ export default function ContactsPage() {
     });
   }, [rowsWithState, statusFilter, stateFilter, searchText]);
 
-
-
   const itemsPerPage = 5;
   const start = (page - 1) * itemsPerPage;
   const paginatedRows = filteredRows.slice(start, start + itemsPerPage);
   const totalPagesCalculated = Math.ceil(filteredRows.length / itemsPerPage);
-
 
   const columns = [
     { key: "name", label: "Name" },
@@ -158,23 +149,46 @@ export default function ContactsPage() {
   return (
     <div className="space-y-6 p-6 relative">
       {/* stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatCard title="Total Contacts" value={allContacts.length} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <StatCard
+          title="Total Contacts"
+          value={allContacts.length}
+          accentColor="border-indigo-500"
+        />
+
+        <StatCard
+          title="New Contacts (7 Days)"
+          value={
+            allContacts.filter((c) => {
+              const created = new Date(c.createdAt);
+              const sevenDaysAgo = new Date();
+              sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+              return created >= sevenDaysAgo;
+            }).length
+          }
+          accentColor="border-emerald-500"
+        />
+
         <StatCard
           title="Follow Ups Today"
-          value={rowsWithState.filter(r => r.statusType === "Due Today").length}
+          value={
+            rowsWithState.filter((r) => r.statusType === "Due Today").length
+          }
+          accentColor="border-sky-500"
         />
 
         <StatCard
           title="Overdue"
-          value={rowsWithState.filter(r => r.statusType === "Overdue").length}
+          value={rowsWithState.filter((r) => r.statusType === "Overdue").length}
+          accentColor="border-rose-500"
         />
 
         <StatCard
           title="Pending Replies"
-          value={rows.filter(r => r.status === "Pending Reply").length}
+          value={rows.filter((r) => r.status === "Pending Reply").length}
+          accentColor="border-amber-500"
         />
-
       </div>
 
       {/* Filters */}
@@ -247,10 +261,7 @@ export default function ContactsPage() {
               </SelectItem>
             ))}
           </SelectContent>
-
-
         </div>
-
       </div>
 
       <DataTable
@@ -266,13 +277,15 @@ export default function ContactsPage() {
 
       <AddContactModal
         open={modalOpen}
-        onClose={() => { setModalOpen(false); setEditingContact(null); }}
+        onClose={() => {
+          setModalOpen(false);
+          setEditingContact(null);
+        }}
         editData={editingContact} // pass row here
         onSuccess={() => {
           fetchContacts(); // refresh
         }}
       />
-
     </div>
   );
 }
