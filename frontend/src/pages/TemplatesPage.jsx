@@ -1,8 +1,11 @@
+// frontend >  src > pages > TemplatesPage.jsx 
+
 import { Pencil, Copy, Trash2, ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Sidebar } from "../components/layout/DashboardLayout";
 import { createTemplate, getTemplates, updateTemplate, deleteTemplate } from "../api/templates.js";
 import { toast } from "sonner";
+import { getCategoriesWithTemplates } from "../utils/templates";
 
 
 export const staticCategories = [
@@ -200,6 +203,7 @@ export const staticCategories = [
     },
 ];
 
+
 export default function TemplatesPage() {
 
     const firstNames = [
@@ -215,9 +219,14 @@ export default function TemplatesPage() {
     const [backendLoaded, setBackendLoaded] = useState(false);
     const _idCheck = (template) => !!template._id;
 
-    useEffect(() => {
-        fetchTemplates();
-    }, []);
+useEffect(() => {
+    const fetchTemplates = async () => {
+        const mergedCategories = await getCategoriesWithTemplates();
+        setCategories(mergedCategories);
+        setBackendLoaded(true);
+    };
+    fetchTemplates();
+}, []);
 
     const fetchTemplates = async () => {
         try {

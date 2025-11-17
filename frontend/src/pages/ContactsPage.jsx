@@ -5,8 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getContacts } from "@/api/contact.js";
 import AddContactModal from "../components/AddContactModal.jsx";
-import { staticCategories } from "../pages/TemplatesPage.jsx"; // adjust path if needed
-
+import { getCategoriesWithTemplates } from "../utils/templates";
 import {
   SelectTrigger,
   SelectValue,
@@ -42,7 +41,7 @@ export default function ContactsPage() {
   const [editingContact, setEditingContact] = useState(null);
 
 
-  const [categories, setCategories] = useState(staticCategories);
+  const [categories, setCategories] = useState(getCategoriesWithTemplates );
 
   function handleEdit(contact) {
     setEditingContact(contact);
@@ -77,6 +76,18 @@ export default function ContactsPage() {
     setAllContacts(res.data.contacts);
   }
 
+      useEffect(() => {
+        const fetchTemplates = async () => {
+            try {
+                const mergedCategories = await getCategoriesWithTemplates();
+                setCategories(mergedCategories);
+            } catch (err) {
+                console.error("Failed to load templates:", err);
+            }
+        };
+    
+        fetchTemplates();
+    }, []);
 
   const statusDropdown = useDropdown();
   const stateDropdown = useDropdown();

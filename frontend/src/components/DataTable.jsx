@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Send, Pen } from "lucide-react";
 import FollowUpModal from "./FollowUpModal";
 import { useState } from "react";
-import { staticCategories } from "../pages/TemplatesPage.jsx"; // adjust path if needed
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
 /**
  * tryParseDate - robustly parse a date string that may be:
  * - ISO 'YYYY-MM-DD'
@@ -182,27 +183,61 @@ export default function DataTable({
                   })}
 
                   {/* Actions column (icons) */}
-                  <td className="p-3 flex justify-center gap-3">
-                    <CheckCircle2
-                      className="cursor-pointer hover:opacity-80"
-                      size={16}
-                      onClick={() => console.log("done clicked", row)}
-                      title="Mark done"
-                    />
-                    <Pen
-                      className="cursor-pointer hover:opacity-80"
-                      size={16}
-                      onClick={() => onEdit?.(row)}
-                      title="Edit"
-                    />
 
-                    <Send
-                      size={16}
-                      className="cursor-pointer hover:opacity-80"
-                      onClick={() => handleSendClick(row)}
-                    />
+                  <td className="p-4">
+                    <div className="flex justify-center items-center gap-2">
 
+                      {/* MARK DONE */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => console.log("Done clicked", row)}
+                            className="p-2 rounded-lg hover:bg-emerald-500/15 transition group"
+                          >
+                            <CheckCircle2
+                              size={18}
+                              className="text-muted-foreground group-hover:text-emerald-600 transition"
+                            />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Mark as Done</TooltipContent>
+                      </Tooltip>
+
+                      {/* EDIT */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => onEdit?.(row)}
+                            className="p-2 rounded-lg hover:bg-blue-500/15 transition group"
+                          >
+                            <Pen
+                              size={18}
+                              className="text-muted-foreground group-hover:text-blue-600 transition"
+                            />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit</TooltipContent>
+                      </Tooltip>
+
+                      {/* SEND FOLLOW-UP */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => handleSendClick(row)}
+                            className="p-2 rounded-lg hover:bg-purple-500/15 transition group"
+                          >
+                            <Send
+                              size={18}
+                              className="text-muted-foreground group-hover:text-purple-600 transition"
+                            />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Send Follow-up</TooltipContent>
+                      </Tooltip>
+
+                    </div>
                   </td>
+
                 </tr>
               ))}
             </tbody>
@@ -211,27 +246,34 @@ export default function DataTable({
 
         {/* Pagination only if enabled */}
 
-        {pagination && (
-          <div className="flex justify-end mt-4 gap-2 p-4">
-            <button
-              onClick={() => onPageChange(page - 1)}
-              disabled={page === 1}
-              className="px-3 py-1 border rounded disabled:opacity-40"
-            >
-              Prev
-            </button>
+        {pagination && totalPages > 1 && (
+          <div className="flex justify-between items-center p-5 border-t border-border bg-muted/30">
+            <div className="text-sm text-muted-foreground font-medium">
+              Page <span className="text-foreground font-semibold">{page}</span> of{" "}
+              <span className="text-foreground font-semibold">{totalPages}</span>
+            </div>
 
-            <span className="text-sm px-2">
-              Page {page} of {totalPages}
-            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => onPageChange?.(page - 1)}
+                className="rounded-lg font-medium shadow-sm hover:shadow transition-shadow"
+              >
+                Previous
+              </Button>
 
-            <button
-              onClick={() => onPageChange(page + 1)}
-              disabled={page === totalPages}
-              className="px-3 py-1 border rounded disabled:opacity-40"
-            >
-              Next
-            </button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === totalPages}
+                onClick={() => onPageChange?.(page + 1)}
+                className="rounded-lg font-medium shadow-sm hover:shadow transition-shadow"
+              >
+                Next
+              </Button>
+            </div>
           </div>
         )}
 

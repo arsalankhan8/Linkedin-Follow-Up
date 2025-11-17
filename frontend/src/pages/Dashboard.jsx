@@ -7,7 +7,8 @@ import { getContacts } from "@/api/contact.js";
 import { useState, useEffect } from "react";
 import AddContactModal from "../components/AddContactModal.jsx";
 import DashboardLayout from "../components/layout/DashboardLayout.jsx";
-import { staticCategories } from "../pages/TemplatesPage.jsx";
+
+import { getCategoriesWithTemplates } from "../utils/templates";
 
 // Small stat card used on top of dashboard
 const StatCard = ({ icon: Icon, title, value }) => {
@@ -27,10 +28,11 @@ const StatCard = ({ icon: Icon, title, value }) => {
 export default function Dashboard() {
 
   // ✅ State for contacts (API data)
-  const [contacts, setContacts] = useState([]);
+  const [contacts, setContacts] = useState([]); // paginated data
+  const [allContacts, setAllContacts] = useState([]); // full list for stats
   const [loading, setLoading] = useState(true);
 
-const [categories, setCategories] = useState(staticCategories);
+  const [categories, setCategories] = useState(getCategoriesWithTemplates );
 
 
   // ✅ Fetch contacts from backend API
@@ -38,7 +40,8 @@ const [categories, setCategories] = useState(staticCategories);
   const fetchContacts = async () => {
     try {
       setLoading(true);
-      const res = await getContacts({ limit: 7 });
+    const res = await getContacts({ limit: 7, page: 1 });
+    setAllContacts(res.data.contacts);
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -63,6 +66,19 @@ const [categories, setCategories] = useState(staticCategories);
     }
   };
 
+    useEffect(() => {
+      const fetchTemplates = async () => {
+          try {
+              const mergedCategories = await getCategoriesWithTemplates();
+              setCategories(mergedCategories);
+          } catch (err) {
+              console.error("Failed to load templates:", err);
+          }
+      };
+  
+      fetchTemplates();
+  }, []);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -80,10 +96,6 @@ const [categories, setCategories] = useState(staticCategories);
   const pendingCount = contacts.filter(c => c.status === "Pending").length;
   const completedCount = contacts.filter(c => c.status === "Completed").length;
 
-
-  useEffect(() => {
-    fetchContacts();
-  }, []);
 
   useEffect(() => {
     fetchContacts();
@@ -125,8 +137,6 @@ const [categories, setCategories] = useState(staticCategories);
         <div className="text-center py-10 text-muted-foreground">Loading contacts...</div>
       ) : (
         <DataTable columns={columns} rows={contacts} pagination={false}   categories={categories} />
-
-
 
       )}
 

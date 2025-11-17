@@ -9,7 +9,7 @@ function StatusSelect({ value, onChange, options = [] }) {
         <select
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="border border-gray-300 rounded-md p-2 w-[150px] focus:outline-none p-2.5 px-3.5 focus:ring-1 focus:ring-blue-500"
+            className="border border-gray-300 rounded-md w-[150px] p-2.5 px-3.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
             {options.map((opt) => (
                 <option key={opt} value={opt}>
@@ -20,9 +20,12 @@ function StatusSelect({ value, onChange, options = [] }) {
     );
 }
 
+
+
 // Pretty date picker
 function PrettyDatePicker({ value, onChange }) {
     const [prettyDate, setPrettyDate] = useState("");
+
 
     useEffect(() => {
         if (value) {
@@ -57,11 +60,15 @@ export default function FollowUpModal({ open, onClose, row, onSend, categories =
     const [nextFollowUp, setNextFollowUp] = useState(row.nextFollowUpDate || "");
     const [status, setStatus] = useState("Followed Up");
     const [showFooterTemplateMenu, setShowFooterTemplateMenu] = useState(false);
-    const [templateCategories, setTemplateCategories] = useState(
 
-        categories.map((c) => ({ ...c, open: false }))
-    );
+    const [copied, setCopied] = useState(false);
 
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(message);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1000); // revert after 1s
+    };
     useEffect(() => {
         if (open) {
             setNextFollowUp(row.nextFollowUpDate || "");
@@ -72,9 +79,20 @@ export default function FollowUpModal({ open, onClose, row, onSend, categories =
 
     if (!open) return null;
 
+    // Insert single template at a time
     const handleInsertTemplate = (text) => {
-        setMessage((prev) => prev + (prev ? "\n" : "") + text);
+        setMessage(text); // replace any previous template text
         setShowFooterTemplateMenu(false);
+    };
+
+    // Limit message to 300 words
+    const handleMessageChange = (e) => {
+        const words = e.target.value.split(/\s+/);
+        if (words.length > 300) {
+            setMessage(words.slice(0, 300).join(" "));
+        } else {
+            setMessage(e.target.value);
+        }
     };
 
     return (
@@ -97,12 +115,13 @@ export default function FollowUpModal({ open, onClose, row, onSend, categories =
                         className="w-full border border-gray-300 rounded-md p-3 resize-none h-32 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         placeholder="Type your follow-up message here..."
                         value={message}
-                        onChange={(e) => setMessage(e.target.value)}
+                        onChange={handleMessageChange}
                     />
                     <div className="absolute top-2 right-2 flex gap-2">
                         <button
-                            onClick={() => navigator.clipboard.writeText(message)}
-                            className="text-gray-400 hover:text-gray-700"
+                            onClick={handleCopy}
+                            className={`transition-transform duration-200 ${copied ? "text-green-500 scale-125" : "text-gray-400 hover:text-gray-700"
+                                }`}
                         >
                             <Copy size={18} />
                         </button>
@@ -110,16 +129,14 @@ export default function FollowUpModal({ open, onClose, row, onSend, categories =
                 </div>
 
                 <div className="flex justify-between items-end">
-                    {/* Footer Inputs */}
-                    <div className="flex justify-between items-end mt-2 gap-5 ">
-                        {/* Footer Template Dropdown */}
-                        {/* Footer Template Dropdown */}
+                    <div className="flex justify-between items-end mt-2 gap-5">
+                        {/* Template Dropdown */}
                         <div className="relative">
                             <label className="block text-sm font-medium mb-1">Template</label>
 
                             <button
                                 onClick={() => setShowFooterTemplateMenu(prev => !prev)}
-                                className="flex items-center gap-2 text-gray-700  border rounded p-2.5 px-3.5 "
+                                className="flex items-center gap-2 text-gray-700 border rounded p-2.5 px-3.5"
                             >
                                 <Wand size={16} /> Insert Template
                             </button>
@@ -146,13 +163,13 @@ export default function FollowUpModal({ open, onClose, row, onSend, categories =
                         </div>
 
                         {/* Date Picker */}
-                        <div className="flex-1 ">
+                        <div className="flex-1">
                             <PrettyDatePicker value={nextFollowUp} onChange={setNextFollowUp} />
                         </div>
 
                         {/* Status */}
                         <div>
-                            <label className="block text-sm font-medium mb-1 ">Status</label>
+                            <label className="block text-sm font-medium mb-1">Status</label>
                             <StatusSelect
                                 value={status}
                                 onChange={setStatus}
@@ -177,7 +194,6 @@ export default function FollowUpModal({ open, onClose, row, onSend, categories =
                         </Button>
                     </div>
                 </div>
-
             </div>
         </div>
     );

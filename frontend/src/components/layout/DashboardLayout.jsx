@@ -25,7 +25,7 @@ export function Sidebar({ className = "", collapsed = false }) {
 
   return (
     <aside
-      className={`w-64 bg-white h-[100vh] border-r border-slate-200 p-4 flex flex-col ${className}`}
+      className={`w-64 bg-white h-screen border-r border-slate-200 p-4 flex flex-col ${className}`}
       aria-label="Sidebar"
     >
       <div className="flex items-center gap-3 px-2 py-2">

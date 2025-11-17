@@ -24,6 +24,7 @@ app.use(cors({
 app.use('/api/auth', authRoutes);
 app.use("/api/contacts", contactRoutes);
 app.use("/api/templates", templateRoutes);
+
 // Connect to DB and start server
 connectDB().then(() => {
   app.listen(process.env.PORT || 5000, () =>
